@@ -4,7 +4,7 @@
 
 - 拡大・縮小するのはプレビュー内のスライド表示だけです。VS Code の UI やエディターの文字サイズは変わりません。
 - Markdown、テーマ、レイアウト、書き出し結果（PDF / HTML / PPTX）は変更しません。
-- Marp 拡張本体は改変しません。VS Code 標準の `markdown.previewScripts` / `markdown.previewStyles` でプレビューに JS と CSS を追加するだけです。
+- Marp 拡張本体は改変しません。VS Code 標準の `markdown.previewScripts` でプレビューに JS を追加するだけです（Marp はプレビュー内の外部 CSS を無効化するため、見た目は JS からインラインで当てています）。
 
 ## 動作環境
 

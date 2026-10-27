@@ -2,14 +2,19 @@
   "name": "marp-preview-zoom",
   "displayName": "Marp Preview Zoom (local)",
   "description": "Zoom and pan slides in the Marp for VS Code preview without changing the slides.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "publisher": "local",
   "private": true,
   "license": "UNLICENSED",
-  "engines": { "vscode": "^1.80.0" },
-  "categories": ["Other"],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
   "contributes": {
-    "markdown.previewScripts": ["./preview/zoom.js"],
-    "markdown.previewStyles": ["./preview/zoom.css"]
+    "markdown.previewScripts": [
+      "./preview/zoom.js"
+    ]
   }
 }

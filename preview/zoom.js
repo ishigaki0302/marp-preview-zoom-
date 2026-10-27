@@ -9,10 +9,26 @@
 
   const container = () => document.getElementById('__marp-vscode');
 
+  // Marp disables preview stylesheets/<style> it does not own, so all styling
+  // is applied inline.
+  const css = (el, styles) => Object.assign(el.style, styles);
+
+  // Slides may live inside shadow roots of Marp's custom elements.
+  const findSlide = (root) => {
+    const hit = root.querySelector('svg[data-marpit-svg]');
+    if (hit) return hit;
+    for (const el of root.querySelectorAll('*')) {
+      const found = el.shadowRoot && findSlide(el.shadowRoot);
+      if (found) return found;
+    }
+    return null;
+  };
+
   // Ratio of the rendered slide width (at fit) to its native size, so the label
   // can show "100%" = slide pixels 1:1 like a PDF viewer.
   const fitRatio = () => {
-    const svg = container()?.querySelector('svg[data-marpit-svg]');
+    const el = container();
+    const svg = el && findSlide(el);
     const vb = svg?.viewBox?.baseVal;
     if (!svg || !vb || !vb.width) return 1;
     return svg.getBoundingClientRect().width / factor / vb.width;
@@ -36,7 +52,7 @@
 
     factor = next;
     el.style.zoom = factor === 1 ? '' : String(factor);
-    document.body.classList.toggle('mpz-zoomed', factor !== 1);
+    document.body.style.overflow = factor === 1 ? '' : 'auto';
 
     const after = el.getBoundingClientRect();
     window.scrollBy(after.left + px * factor - cx, after.top + py * factor - cy);
@@ -47,6 +63,12 @@
     const b = document.createElement('button');
     b.textContent = text;
     b.title = title;
+    css(b, {
+      minWidth: '24px', height: '22px', padding: '0 6px', border: '0', borderRadius: '3px',
+      background: 'transparent', color: 'inherit', font: 'inherit', cursor: 'pointer',
+    });
+    b.addEventListener('mouseenter', () => (b.style.background = 'var(--vscode-toolbar-hoverBackground, #ffffff1a)'));
+    b.addEventListener('mouseleave', () => (b.style.background = 'transparent'));
     b.addEventListener('click', onClick);
     return b;
   };
@@ -57,6 +79,15 @@
     bar.id = 'mpz-toolbar';
     const level = document.createElement('span');
     level.id = 'mpz-level';
+    css(level, { minWidth: '44px', textAlign: 'center', fontVariantNumeric: 'tabular-nums' });
+    css(bar, {
+      position: 'fixed', top: '8px', right: '16px', zIndex: '10000', display: 'flex', gap: '2px',
+      alignItems: 'center', padding: '2px', borderRadius: '4px', userSelect: 'none',
+      font: '12px/1 var(--vscode-font-family, sans-serif)',
+      background: 'var(--vscode-editorWidget-background, #252526)',
+      color: 'var(--vscode-editorWidget-foreground, #ccc)',
+      border: '1px solid var(--vscode-editorWidget-border, #454545)',
+    });
     bar.append(
       button('−', 'Zoom out', () => apply(factor / STEP)),
       level,
@@ -84,11 +115,13 @@
   // re-apply the zoom and keep the scroll position.
   const restore = () => {
     ensureToolbar();
+    const bar = document.getElementById('mpz-toolbar');
+    if (bar) bar.style.display = container() ? 'flex' : 'none';
     const el = container();
     if (el && factor !== 1 && el.style.zoom !== String(factor)) {
       const { scrollX, scrollY } = window;
       el.style.zoom = String(factor);
-      document.body.classList.add('mpz-zoomed');
+      document.body.style.overflow = 'auto';
       window.scrollTo(scrollX, scrollY);
     }
     updateLabel();
