@@ -39,6 +39,27 @@
     if (label) label.textContent = `${Math.round(factor * fitRatio() * 100)}%`;
   };
 
+  // Scale with a transform rather than CSS `zoom`: Marp refits slides to the
+  // container width, which cancels `zoom`. The layout width stays fixed, and
+  // margins give the scaled content room to scroll.
+  const layout = (el) => {
+    if (factor === 1) {
+      css(el, { transform: '', transformOrigin: '', width: '', marginRight: '', marginBottom: '' });
+      document.body.style.overflow = '';
+      return;
+    }
+    if (!el.style.width) el.style.width = `${el.offsetWidth}px`;
+    const w = el.offsetWidth;
+    const h = el.offsetHeight;
+    css(el, {
+      transform: `scale(${factor})`,
+      transformOrigin: '0 0',
+      marginRight: `${w * (factor - 1)}px`,
+      marginBottom: `${h * (factor - 1)}px`,
+    });
+    document.body.style.overflow = 'auto';
+  };
+
   const apply = (next, clientX, clientY) => {
     const el = container();
     if (!el) return;
@@ -51,8 +72,7 @@
     const py = (cy - before.top) / factor;
 
     factor = next;
-    el.style.zoom = factor === 1 ? '' : String(factor);
-    document.body.style.overflow = factor === 1 ? '' : 'auto';
+    layout(el);
 
     const after = el.getBoundingClientRect();
     window.scrollBy(after.left + px * factor - cx, after.top + py * factor - cy);
@@ -118,14 +138,39 @@
     const bar = document.getElementById('mpz-toolbar');
     if (bar) bar.style.display = container() ? 'flex' : 'none';
     const el = container();
-    if (el && factor !== 1 && el.style.zoom !== String(factor)) {
+    if (el && factor !== 1 && el.style.transform !== `scale(${factor})`) {
       const { scrollX, scrollY } = window;
-      el.style.zoom = String(factor);
-      document.body.style.overflow = 'auto';
+      layout(el);
       window.scrollTo(scrollX, scrollY);
     }
     updateLabel();
   };
+
+  // Drag to pan while zoomed, like an image viewer.
+  let drag = null;
+  window.addEventListener('mousedown', (e) => {
+    if (factor === 1 || e.button !== 0 || !container()?.contains(e.target)) return;
+    drag = { x: e.clientX, y: e.clientY };
+    document.body.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e) => {
+    if (!drag) return;
+    window.scrollBy(drag.x - e.clientX, drag.y - e.clientY);
+    drag = { x: e.clientX, y: e.clientY };
+  });
+  window.addEventListener('mouseup', () => {
+    drag = null;
+    document.body.style.cursor = '';
+  });
+  // Re-measure the fit width when the pane is resized.
+  window.addEventListener('resize', () => {
+    const el = container();
+    if (el && factor !== 1) {
+      css(el, { transform: '', width: '' });
+      layout(el);
+    }
+  });
   window.addEventListener('vscode.markdown.updateContent', restore);
   new MutationObserver(restore).observe(document.body, { childList: true });
   window.addEventListener('resize', updateLabel);
