@@ -126,7 +126,7 @@
       if (!(e.ctrlKey || e.metaKey) || !container()) return;
       e.preventDefault();
       e.stopPropagation();
-      apply(factor * Math.exp(-e.deltaY * 0.0025), e.clientX, e.clientY);
+      apply(factor * Math.exp(-e.deltaY * 0.006), e.clientX, e.clientY);
     },
     { passive: false, capture: true },
   );
